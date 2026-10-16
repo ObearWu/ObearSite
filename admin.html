@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>黑熊網站後台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+/* 配色沿用前台（index.html）的報導者式黑白紅，深色模式同一套變數 */
+:root{
+  --paper:#ffffff; --ground:#f1f1f1; --ink:#262626; --ink-2:#5c5a5a; --rule:#dcdad9;
+  --red:#f80b28; --red-ink:#c4071f; --gold:#9c7b3e; --ok:#2f7a3f; --ok-soft:#e3f2e6; --warn-soft:#fff1d6;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#161515; --ground:#0e0d0d; --ink:#ece9e7; --ink-2:#a8a4a2; --rule:#34312f;
+  --red:#ff3d55; --red-ink:#ff6b7e; --gold:#c9a764; --ok:#8fd19e; --ok-soft:#1c2b20; --warn-soft:#2e2615; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#161515; --ground:#0e0d0d; --ink:#ece9e7; --ink-2:#a8a4a2; --rule:#34312f;
+  --red:#ff3d55; --red-ink:#ff6b7e; --gold:#c9a764; --ok:#8fd19e; --ok-soft:#1c2b20; --warn-soft:#2e2615; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65}
+a{color:var(--red-ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 80px}
+
+header.top{position:sticky;top:0;z-index:6;background:var(--paper);border-bottom:1px solid var(--rule);margin:0 -16px;padding:10px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.brand{font-family:var(--serif);font-weight:900;font-size:20px;letter-spacing:.06em;white-space:nowrap}
+.brand small{font-family:var(--sans);font-weight:500;font-size:12px;color:var(--ink-2);letter-spacing:.12em;margin-left:8px}
+.account{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2);flex-wrap:wrap;margin-left:auto}
+.role{font-size:11px;font-weight:700;padding:1px 8px;border:1px solid currentColor;color:var(--red-ink)}
+
+.btn{border:1px solid var(--ink);background:transparent;padding:6px 16px;cursor:pointer;font-size:14px;font-weight:700;white-space:nowrap}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.btn.primary:hover{background:var(--red-ink);border-color:var(--red-ink)}
+.btn.danger{color:var(--red-ink);border-color:transparent;padding-inline:8px}
+.btn.danger:hover{background:none;text-decoration:underline}
+.btn.small{padding:2px 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* 發布列 */
+.publish{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);padding:10px 14px;margin:16px 0 0;font-size:14px}
+.publish.dirty{border-left-color:var(--red);background:var(--warn-soft)}
+.publish.clean{border-left-color:var(--ok)}
+.publish .msg{flex:1;min-width:220px}
+.publish .msg b{font-weight:700}
+
+/* 登入卡片 */
+.gate{max-width:420px;margin:14vh auto 0;background:var(--paper);border-top:3px solid var(--red);padding:28px 24px;display:grid;justify-items:center;gap:12px;text-align:center}
+.gate b{font-family:var(--serif);font-weight:900;font-size:24px}
+.gate p{margin:0;color:var(--ink-2);font-size:14px}
+.gate .err{color:var(--red-ink)}
+
+/* 分頁 */
+nav.tabs{display:flex;gap:0;overflow-x:auto;margin-top:16px;border-bottom:1px solid var(--ink);scrollbar-width:none}
+nav.tabs button{flex:none;font-size:15px;background:none;border:0;border-bottom:3px solid transparent;color:var(--ink-2);padding:8px 14px;cursor:pointer;font-weight:500}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red);font-weight:700}
+nav.tabs .badge{display:inline-block;min-width:18px;font-size:11px;line-height:18px;text-align:center;background:var(--red);color:#fff;margin-left:4px;padding:0 4px}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 12px}
+.toolbar h2{font-family:var(--serif);font-weight:900;font-size:24px;margin:0 8px 0 0}
+.toolbar .count{font-size:13px;color:var(--ink-2)}
+.spacer{flex:1}
+.search{min-width:200px;flex:0 1 300px;padding:6px 12px;border:1px solid var(--rule);background:var(--paper)}
+
+.tablewrap{overflow-x:auto;background:var(--paper);border-top:1px solid var(--ink)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-size:12px;font-weight:700;color:var(--ink-2);letter-spacing:.06em;white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--ground)}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--red-ink);white-space:nowrap}
+td .clip{display:block;max-width:34ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{padding:28px;text-align:center;color:var(--ink-2)}
+.hint{font-size:13px;color:var(--ink-2);margin:0 0 12px}
+
+/* 頁面文字、洽談 */
+.cards{display:grid;gap:14px}
+.card{background:var(--paper);border:1px solid var(--rule);padding:14px 16px;display:grid;gap:8px}
+.card.dim{opacity:.6}
+.card label{font-weight:700}
+.card small{color:var(--ink-2)}
+.card textarea{width:100%;padding:8px 12px;border:1px solid var(--rule);background:var(--ground);min-height:90px;resize:vertical}
+.card-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;font-size:13px;color:var(--ink-2)}
+.card-head b{font-size:16px;color:var(--ink)}
+.card-msg{white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.card-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.card-row select,.card-row input{padding:5px 10px;border:1px solid var(--rule);background:var(--ground)}
+.card-row input{flex:1;min-width:180px}
+.tag-new{font-size:11px;font-weight:700;padding:0 8px;background:var(--red);color:#fff}
+dl.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;margin:0;font-size:14px}
+dl.kv dt{color:var(--ink-2)}
+dl.kv dd{margin:0;overflow-wrap:anywhere}
+
+/* 對話框 */
+dialog{border:0;border-top:3px solid var(--red);background:var(--paper);color:var(--ink);padding:0;width:min(620px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog.wide{width:min(860px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog form{display:grid;gap:12px;padding:20px}
+dialog h3{margin:0;font-family:var(--serif);font-weight:900;font-size:21px}
+.field{display:grid;gap:4px}
+.field > span{font-size:13px;font-weight:700}
+.field small{color:var(--ink-2);font-size:12px}
+.field input:not([type=checkbox]),.field select,.field textarea{width:100%;padding:7px 12px;border:1px solid var(--rule);background:var(--ground)}
+.field textarea{min-height:90px;resize:vertical}
+.field.check{grid-template-columns:auto 1fr;align-items:center;gap:8px}
+.field.check input{width:18px;height:18px;accent-color:var(--red)}
+.req{color:var(--red-ink)}
+.form-err{color:var(--red-ink);font-size:14px;margin:0}
+.form-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding-top:4px}
+.form-actions .left{margin-right:auto}
+
+/* RSS 同步 */
+.sync h4{margin:8px 0 4px;font-size:15px;border-bottom:1px solid var(--ink);padding-bottom:4px}
+.sync-item{padding:8px 0;border-bottom:1px solid var(--rule);display:grid;gap:4px}
+.sync-item > label{font-weight:700;display:flex;gap:8px;align-items:baseline}
+.sync-change{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;font-size:14px;padding-left:4px}
+.sync-change input{margin-top:5px;accent-color:var(--red)}
+.sync-change del{color:var(--ink-2)}
+.sync-change ins{text-decoration:none;color:var(--ok)}
+.sync-change .clip{display:block;max-height:4.9em;overflow:hidden}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--paper);padding:9px 20px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.2);max-width:calc(100vw - 32px)}
+#toast.err{background:var(--red-ink);color:#fff}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">黑熊網站後台<small>OBEAR · ADMIN</small></div>
+    <div class="account" id="account" hidden>
+      <span id="accountEmail"></span><span class="role" id="accountRole"></span>
+      <a href="./" target="_blank" rel="noopener">看網站 ↗</a>
+      <button type="button" class="btn small" id="logoutBtn">登出</button>
+    </div>
+  </header>
+
+  <section class="gate" id="gate">
+    <b>登入後台</b>
+    <p id="gateMsg">請用已授權的 Google 帳號登入。</p>
+    <div id="googleBtn"></div>
+  </section>
+
+  <main id="app" hidden>
+    <div class="publish" id="publishBar">
+      <span class="msg" id="publishMsg">讀取發布狀態中…</span>
+      <button type="button" class="btn small" id="previewBtn">預覽網站</button>
+      <button type="button" class="btn small primary" id="publishBtn">發布網站</button>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <section id="panel"></section>
+  </main>
+</div>
+
+<dialog id="editor"><form method="dialog" id="editorForm" novalidate></form></dialog>
+<dialog id="syncDlg" class="wide"><form method="dialog" id="syncForm" novalidate></form></dialog>
+<div id="toast" role="status" hidden></div>
+
+<script>
+const API_BASE=/^(localhost|127\.0\.0\.1)$/.test(location.hostname)?"http://127.0.0.1:5001":"https://obearsite-backend.onrender.com";
+// 跟 TaiwanLARP 共用同一組 OAuth Client ID：兩個網站都在 https://obearwu.github.io 這個來源底下
+const GOOGLE_CLIENT_ID="593865088792-hircgnt15vfdeispj3f3qms7gnnpjh6q.apps.googleusercontent.com";
+// 後端發的 session token。只存在這台瀏覽器；登出或過期時清掉。
+const TOKEN_KEY="obearAdminSession";
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
+const fmtTime=iso=>iso?new Date(iso).toLocaleString("zh-TW",{hour12:false,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"";
+
+let toastTimer=null;
+function toast(msg,isErr){const t=$("toast");t.textContent=msg;t.className=isErr?"err":"";t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,isErr?7000:2600)}
+
+class AuthError extends Error{}
+async function api(path,{method="GET",body,raw}={}){
+  const headers={};const token=store.get(TOKEN_KEY);
+  if(token)headers.Authorization=`Bearer ${token}`;
+  if(body!==undefined)headers["Content-Type"]="application/json";
+  let res;
+  try{res=await fetch(API_BASE+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)})}
+  catch(e){throw new Error("連不上後端，可能正在喚醒中（約半分鐘），請稍後再試一次。")}
+  if(raw&&res.ok)return res.text();
+  const data=await res.json().catch(()=>({}));
+  if(res.status===401)throw new AuthError(data.error||"登入已逾期，請重新登入。");
+  if(!res.ok)throw new Error(data.error||`發生錯誤（${res.status}）`);
+  return data;
+}
+
+/* ===== 狀態 ===== */
+const ROLE_LABELS={admin:"管理員",editor:"編輯者"},USER_STATUS={active:"啟用",disabled:"停用"};
+const TABS=[["episodes","Podcast 集數"],["timeline","經歷"],["services","合作服務"],["faqs","常見問題"],["texts","頁面文字"],["inquiries","洽談"],["users","使用者"]];
+let me=null,schema=null,current="episodes",rows=[],query="";
+
+/* ===== 發布 ===== */
+async function refreshPublish(){
+  try{
+    const s=await api("/api/admin-publish");
+    const bar=$("publishBar");
+    bar.className="publish "+(s.has_unpublished?"dirty":"clean");
+    const last=s.last_published_at?`上次發布：${fmtTime(s.last_published_at)}（${esc(s.last_published_by)}）`:"還沒從後台發布過";
+    $("publishMsg").innerHTML=(s.has_unpublished?"<b>有還沒發布的修改。</b>修改要按「發布網站」才會出現在網站上。":"<b>網站已是最新內容。</b>")+
+      ` <span style="color:var(--ink-2)">${last}${s.commit_url?` · <a href="${esc(s.commit_url)}" target="_blank" rel="noopener">GitHub 紀錄</a>`:""}</span>`+
+      (s.configured?"":` <span style="color:var(--red-ink)">（後端尚未設定 GITHUB_TOKEN，暫時不能發布）</span>`);
+    $("publishBtn").disabled=!s.configured;
+  }catch(e){if(e instanceof AuthError)return handleError(e);$("publishMsg").textContent="讀不到發布狀態："+e.message}
+}
+$("publishBtn").onclick=async()=>{
+  if(!confirm("確定要把目前的內容發布到網站嗎？大約 1 分鐘後網站會更新。"))return;
+  const b=$("publishBtn");b.disabled=true;b.textContent="發布中…";
+  try{
+    const r=await api("/api/admin-publish",{method:"POST"});
+    toast(r.commit_sha?`已發布（${r.changed_files.join("、")}），約 1 分鐘後網站更新。`:"內容跟網站上的一樣，不需要發布。");
+  }catch(e){handleError(e)}
+  finally{b.textContent="發布網站";await refreshPublish()}
+};
+$("previewBtn").onclick=async()=>{
+  // 先開分頁再填內容：等 API 回來才開的話，瀏覽器會當成彈出視窗擋掉
+  const w=window.open("","_blank");
+  if(w)w.document.write("<p style='font-family:sans-serif;padding:24px'>產生預覽中…</p>");
+  try{
+    let html=await api("/api/admin-publish/preview",{raw:true});
+    // 預覽是 blob 網址，相對路徑的圖片找不到，加 <base> 指回後台所在的資料夾（跟網站同一層）
+    html=html.replace("<head>",`<head><base href="${new URL("./",location.href).href}">`);
+    const url=URL.createObjectURL(new Blob([html],{type:"text/html"}));
+    if(w)w.location=url;else location.href=url;
+  }catch(e){if(w)w.close();handleError(e)}
+};
+
+/* ===== 分頁 ===== */
+function renderTabs(newCount){
+  $("tabs").innerHTML=TABS.filter(([k])=>k!=="users"||me.role==="admin")
+    .map(([k,l])=>`<button type="button" role="tab" data-k="${k}" aria-selected="${k===current}">${l}${k==="inquiries"&&newCount?`<span class="badge">${newCount}</span>`:""}</button>`).join("");
+  $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>showTab(b.dataset.k));
+}
+let newInquiries=0;
+// 快速切換分頁時，前一個分頁較晚回來的回應不能蓋掉現在的分頁：
+// 例如集數的資料套上「經歷」的欄位，會畫成一張空白表格，看起來像沒有資料（known-issue #2、#26）
+let tabSeq=0;
+const stale=mine=>mine!==tabSeq;
+async function showTab(k){
+  const mine=++tabSeq;
+  current=k;query="";renderTabs(newInquiries);store.set("obearAdminTab",k);
+  $("panel").innerHTML=`<p class="empty">讀取中…</p>`;
+  try{
+    if(k==="texts")return await renderTexts(mine);
+    if(k==="inquiries")return await renderInquiries(mine);
+    if(k==="users")return await renderUsers(mine);
+    const got=await api(`/api/admin/${k}`);
+    if(stale(mine))return;
+    rows=got;
+    renderResource();
+  }catch(e){if(e instanceof AuthError||!stale(mine))handleError(e)}
+}
+
+/* ===== 內容表（欄位定義來自後端 GET /api/admin-schema） ===== */
+function cellText(f,v){
+  if(f.kind==="bool")return v?"✓":"";
+  if(f.kind==="text_list")return(v||[]).join("、");
+  return v??"";
+}
+function renderResource(){
+  const r=schema.resources[current];
+  const cols=r.list_columns.map(n=>r.fields.find(f=>f.name===n));
+  const q=query.trim().toLowerCase();
+  const shown=q?rows.filter(row=>r.fields.some(f=>String(cellText(f,row[f.name])).toLowerCase().includes(q))):rows;
+  const extra=current==="episodes"?`<button type="button" class="btn" id="syncBtn">從 SoundOn RSS 同步</button>`:"";
+  const tips={
+    episodes:"點任一列編輯。新集數上架後，按「從 SoundOn RSS 同步」自動帶入標題、日期、長度與簡介，再補上「上班喝什麼」。網站只顯示最新一集＋其餘集數卡片，順序依集數。",
+    timeline:"「關於黑熊」右側的經歷時間軸，依排序由小到大。",
+    services:"四張服務卡片。代號決定版面（insurance 有證照與鋼筆圖、event 有雞腿圖、photo 佔滿整列），一般不需要改代號。",
+    faqs:"第一題預設展開。回答裡可以寫 {集數}、{職業數}、{總時數}，發布時自動換成數字。所有問答也會寫進給搜尋引擎看的 FAQ 結構化資料。",
+  };
+  $("panel").innerHTML=`
+    <div class="toolbar">
+      <h2>${esc(r.label)}</h2><span class="count">${shown.length===rows.length?`共 ${rows.length} 筆`:`${shown.length} / ${rows.length} 筆`}</span>
+      <span class="spacer"></span>
+      <input class="search" id="search" type="search" placeholder="搜尋…" value="${esc(query)}" aria-label="搜尋">
+      ${extra}
+      <button type="button" class="btn primary" id="addBtn">＋ 新增</button>
+    </div>
+    <p class="hint">${tips[current]||""}</p>
+    <div class="tablewrap">${shown.length?`<table>
+      <thead><tr>${cols.map(f=>`<th>${esc(f.label)}</th>`).join("")}</tr></thead>
+      <tbody>${shown.map(row=>`<tr data-id="${row.id}">${cols.map(f=>{
+        const v=cellText(f,row[f.name]);
+        return f.kind==="int"?`<td class="num">${esc(v)}</td>`:`<td><span class="clip">${esc(v)}</span></td>`}).join("")}</tr>`).join("")}</tbody>
+    </table>`:`<p class="empty">${q?"找不到符合的資料":"還沒有資料"}</p>`}</div>`;
+  const s=$("search");s.oninput=()=>{query=s.value;const pos=s.selectionStart;renderResource();const n=$("search");n.focus();n.setSelectionRange(pos,pos)};
+  $("addBtn").onclick=()=>openEditor(null);
+  if($("syncBtn"))$("syncBtn").onclick=openSync;
+  $("panel").querySelectorAll("tbody tr").forEach(tr=>tr.onclick=()=>openEditor(rows.find(x=>x.id===+tr.dataset.id)));
+}
+
+function fieldHtml(f,v){
+  const req=f.required?` <span class="req">*</span>`:"";
+  const help=f.help?`<small>${esc(f.help)}</small>`:"";
+  const id=`f_${f.name}`;
+  if(f.kind==="bool")return `<label class="field check"><input type="checkbox" id="${id}" ${v?"checked":""}><span>${esc(f.label)}</span>${help?`<span></span>${help}`:""}</label>`;
+  let input;
+  if(f.kind==="longtext")input=`<textarea id="${id}" rows="4">${esc(v)}</textarea>`;
+  else if(f.kind==="text_list")input=`<textarea id="${id}" rows="4">${esc((v||[]).join("\n"))}</textarea>`;
+  else if(f.kind==="int")input=`<input id="${id}" type="number" step="1" value="${esc(v)}">`;
+  else if(f.kind==="date")input=`<input id="${id}" type="date" value="${esc(v)}">`;
+  else input=`<input id="${id}" value="${esc(v)}">`;
+  return `<label class="field"><span>${esc(f.label)}${req}</span>${input}${help}</label>`;
+}
+function readField(f){
+  const el=$(`f_${f.name}`);
+  if(f.kind==="bool")return el.checked;
+  if(f.kind==="text_list")return el.value.split("\n").map(s=>s.trim()).filter(Boolean);
+  if(f.kind==="int")return el.value===""?null:Number(el.value);
+  return el.value;
+}
+function openEditor(row){
+  const r=schema.resources[current];
+  const defaults={};
+  if(!row){
+    // 新增的資料預設排在最後；新集數預設是下一集
+    if(r.fields.some(f=>f.name==="sort_order"))defaults.sort_order=(Math.max(0,...rows.map(x=>x.sort_order||0))+10);
+    if(current==="episodes")defaults.episode_no=Math.max(0,...rows.map(x=>x.episode_no))+1;
+  }
+  const data=row||defaults;
+  const form=$("editorForm");
+  form.innerHTML=`<h3>${row?"編輯":"新增"}${esc(r.label)}</h3>
+    ${r.fields.map(f=>fieldHtml(f,data[f.name]??(f.kind==="int"&&!row?"":""))).join("")}
+    ${row?`<small style="color:var(--ink-2)">最後修改：${fmtTime(row.updated_at)}${row.updated_by?`（${esc(row.updated_by)}）`:""}</small>`:""}
+    <p class="form-err" id="formErr" hidden></p>
+    <div class="form-actions">
+      ${row?`<button type="button" class="btn danger left" id="delBtn">刪除</button>`:""}
+      <button type="button" class="btn" id="cancelBtn">取消</button>
+      <button type="submit" class="btn primary">儲存</button>
+    </div>`;
+  $("cancelBtn").onclick=()=>$("editor").close();
+  if(row)$("delBtn").onclick=async()=>{
+    if(!confirm("確定要刪除這一筆嗎？刪除後無法復原。"))return;
+    try{await api(`/api/admin/${current}/${row.id}`,{method:"DELETE"});$("editor").close();toast("已刪除");await showTab(current);refreshPublish()}
+    catch(e){showFormErr(e)}
+  };
+  form.onsubmit=async ev=>{
+    ev.preventDefault();
+    const body={};r.fields.forEach(f=>body[f.name]=readField(f));
+    try{
+      await api(row?`/api/admin/${current}/${row.id}`:`/api/admin/${current}`,{method:row?"PUT":"POST",body});
+      $("editor").close();toast("已儲存，記得按「發布網站」");await showTab(current);refreshPublish();
+    }catch(e){showFormErr(e)}
+  };
+  $("editor").showModal();
+}
+function showFormErr(e){if(e instanceof AuthError){$("editor").close();$("syncDlg").close();return handleError(e)}const p=$("formErr")||$("syncErr");p.textContent=e.message;p.hidden=false}
+
+/* ===== RSS 同步 ===== */
+async function openSync(){
+  const form=$("syncForm");
+  form.innerHTML=`<h3>從 SoundOn RSS 同步</h3><p class="empty">讀取 RSS 中…</p>`;
+  $("syncDlg").showModal();
+  let p;
+  try{p=await api("/api/admin-episodes/sync")}
+  catch(e){form.innerHTML=`<h3>從 SoundOn RSS 同步</h3><p class="form-err">${esc(e.message)}</p><div class="form-actions"><button type="button" class="btn" onclick="this.closest('dialog').close()">關閉</button></div>`;if(e instanceof AuthError)handleError(e);return}
+  const show=v=>esc(v===""||v==null?"（空白）":v);
+  const newHtml=p.new.map(e=>`<div class="sync-item"><label><input type="checkbox" data-new="${esc(e.soundon_id)}" checked> 新增 EP${e.episode_no}　${esc(e.job)} ${esc(e.guest)}</label>
+    <div class="sync-change"><span></span><span>${esc(e.title)}　·　${esc(e.published_on)}　·　${e.minutes} 分鐘<br><small style="color:var(--ink-2)">「上班喝什麼」RSS 裡沒有，新增後請到該集補上。</small></span></div></div>`).join("");
+  // 只有簡介不同的集數很常見（網站上的簡介是精簡版），收進預設收合的區塊，免得蓋過真正要處理的差異
+  const isLeadOnly=u=>u.changes.every(c=>c.field==="lead"&&!c.default);
+  const important=p.updates.filter(u=>!isLeadOnly(u)),leadOnly=p.updates.filter(isLeadOnly);
+  const updItem=u=>`<div class="sync-item"><label>EP${u.episode_no}　${esc(u.name)}</label>${u.changes.map(c=>`
+    <label class="sync-change"><input type="checkbox" data-sid="${esc(u.soundon_id)}" data-field="${c.field}" ${c.default?"checked":""}>
+    <span><b>${esc(c.label)}</b>：<del class="clip">${show(c.old)}</del><ins class="clip">→ ${show(c.new)}</ins></span></label>`).join("")}</div>`;
+  const missing=p.missing.length?`<h4>資料庫有、RSS 沒有（可能在 SoundOn 下架了，不會自動刪除）</h4><p>${p.missing.map(m=>`EP${m.episode_no} ${esc(m.name)}`).join("、")}</p>`:"";
+  const nothing=!p.new.length&&!p.updates.length;
+  form.innerHTML=`<h3>從 SoundOn RSS 同步</h3>
+    <p class="hint" style="margin:0">RSS 共 ${p.feed_count} 集。勾選要套用的項目；簡介預設不勾，因為網站上的簡介通常是精簡過的版本，RSS 的是完整節目說明。「上班喝什麼」和主持人標記不會被改動。</p>
+    <div class="sync">
+      ${p.new.length?`<h4>新的集數（${p.new.length}）</h4>${newHtml}`:""}
+      ${important.length?`<h4>已有集數的差異（${important.length} 集）</h4>${important.map(updItem).join("")}`:""}
+      ${leadOnly.length?`<details><summary style="cursor:pointer;margin-top:8px;font-weight:700">只有簡介跟 RSS 不同的集數（${leadOnly.length} 集，預設不更新）</summary>${leadOnly.map(updItem).join("")}</details>`:""}
+      ${missing}
+      ${nothing?`<p class="empty">資料庫跟 RSS 一致，沒有需要同步的項目。</p>`:""}
+    </div>
+    <p class="form-err" id="syncErr" hidden></p>
+    <div class="form-actions">
+      <button type="button" class="btn" id="syncCancel">${nothing?"關閉":"取消"}</button>
+      ${nothing?"":`<button type="submit" class="btn primary">套用勾選的項目</button>`}
+    </div>`;
+  $("syncCancel").onclick=()=>$("syncDlg").close();
+  form.onsubmit=async ev=>{
+    ev.preventDefault();
+    const body={new:[...form.querySelectorAll("[data-new]:checked")].map(x=>x.dataset.new),updates:[]};
+    const map={};
+    form.querySelectorAll("[data-sid]:checked").forEach(x=>(map[x.dataset.sid]=map[x.dataset.sid]||[]).push(x.dataset.field));
+    body.updates=Object.entries(map).map(([soundon_id,fields])=>({soundon_id,fields}));
+    if(!body.new.length&&!body.updates.length){$("syncErr").textContent="沒有勾選任何項目。";$("syncErr").hidden=false;return}
+    try{
+      const r=await api("/api/admin-episodes/sync",{method:"POST",body});
+      $("syncDlg").close();toast(`已新增 ${r.created} 集、更新 ${r.updated} 集，記得按「發布網站」`);
+      await showTab("episodes");refreshPublish();
+    }catch(e){showFormErr(e)}
+  };
+}
+
+/* ===== 頁面文字 ===== */
+async function renderTexts(mine=tabSeq){
+  const list=await api("/api/admin-texts");
+  if(stale(mine))return;
+  $("panel").innerHTML=`<div class="toolbar"><h2>頁面文字</h2></div>
+    <p class="hint">網站上的固定段落。可以寫 {集數}、{職業數}、{總時數}，發布時自動換成數字。</p>
+    <div class="cards">${list.map(t=>`<div class="card">
+      <label for="t_${t.key}">${esc(t.description)}</label>
+      <textarea id="t_${t.key}" rows="${t.key==="about_body"?12:3}">${esc(t.value)}</textarea>
+      <div class="card-row"><small>${t.updated_at?`最後修改：${fmtTime(t.updated_at)}（${esc(t.updated_by)}）`:""}</small><span class="spacer"></span>
+      <button type="button" class="btn small primary" data-key="${t.key}">儲存</button></div></div>`).join("")}</div>`;
+  $("panel").querySelectorAll("button[data-key]").forEach(b=>b.onclick=async()=>{
+    try{await api(`/api/admin-texts/${b.dataset.key}`,{method:"PUT",body:{value:$(`t_${b.dataset.key}`).value}});toast("已儲存，記得按「發布網站」");refreshPublish()}
+    catch(e){handleError(e)}
+  });
+}
+
+/* ===== 洽談 ===== */
+let showAllInquiries=false;
+async function renderInquiries(mine=tabSeq){
+  const list=await api("/api/admin-inquiries");
+  if(stale(mine))return;
+  newInquiries=list.filter(x=>x.status==="new").length;renderTabs(newInquiries);
+  const open=list.filter(x=>x.status==="new"||x.status==="in_progress");
+  const shown=showAllInquiries?list:open;
+  $("panel").innerHTML=`<div class="toolbar"><h2>洽談</h2><span class="count">未處理 ${open.length} 則・全部 ${list.length} 則</span><span class="spacer"></span>
+    <label style="font-size:14px"><input type="checkbox" id="allToggle" ${showAllInquiries?"checked":""}> 顯示已完成與不處理</label></div>
+    <p class="hint">網站「洽談合作」區的表單送來的訊息。有設定 Brevo 時，每則新洽談也會寄信通知管理員。</p>
+    <div class="cards">${shown.length?shown.map(q=>`<div class="card${q.status==="done"||q.status==="rejected"?" dim":""}">
+      <div class="card-head"><b>${esc(q.name)}</b>${q.status==="new"?`<span class="tag-new">新</span>`:""}<span>${esc(schema.inquiry_services[q.service]||q.service)}</span><span>${fmtTime(q.created_at)}</span><span>#${q.id}</span></div>
+      <dl class="kv"><dt>聯絡方式</dt><dd>${esc(q.contact)}</dd><dt>時間地點</dt><dd>${esc(q.schedule)||"（未填）"}</dd></dl>
+      <p class="card-msg">${esc(q.message)}</p>
+      <div class="card-row">
+        <select data-id="${q.id}" class="st" aria-label="狀態">${Object.entries(schema.inquiry_statuses).map(([k,l])=>`<option value="${k}" ${k===q.status?"selected":""}>${l}</option>`).join("")}</select>
+        <input class="note" data-id="${q.id}" value="${esc(q.admin_note)}" placeholder="內部備註（訪客看不到）" aria-label="內部備註">
+        <button type="button" class="btn small primary save" data-id="${q.id}">儲存</button>
+        <button type="button" class="btn danger del" data-id="${q.id}">刪除</button>
+      </div></div>`).join(""):`<p class="empty">${showAllInquiries?"還沒有任何洽談":"沒有未處理的洽談"}</p>`}</div>`;
+  $("allToggle").onchange=e=>{showAllInquiries=e.target.checked;renderInquiries().catch(handleError)};
+  $("panel").querySelectorAll(".save").forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.id;
+    try{await api(`/api/admin-inquiries/${id}`,{method:"PUT",body:{status:$("panel").querySelector(`.st[data-id="${id}"]`).value,admin_note:$("panel").querySelector(`.note[data-id="${id}"]`).value}});toast("已儲存");await renderInquiries()}
+    catch(e){handleError(e)}
+  });
+  $("panel").querySelectorAll(".del").forEach(b=>b.onclick=async()=>{
+    if(!confirm("確定要刪除這則洽談嗎？刪除後無法復原。"))return;
+    try{await api(`/api/admin-inquiries/${b.dataset.id}`,{method:"DELETE"});toast("已刪除");await renderInquiries()}
+    catch(e){handleError(e)}
+  });
+}
+
+/* ===== 使用者 ===== */
+async function renderUsers(mine=tabSeq){
+  const list=await api("/api/admin-users");
+  if(stale(mine))return;
+  $("panel").innerHTML=`<div class="toolbar"><h2>使用者</h2><span class="count">共 ${list.length} 人</span><span class="spacer"></span>
+    <button type="button" class="btn primary" id="addUser">＋ 新增使用者</button></div>
+    <p class="hint">只有列在這裡、狀態為「啟用」的 Google 帳號能登入後台。編輯者可以改內容和發布，管理員另外可以管理使用者。</p>
+    <div class="tablewrap"><table><thead><tr><th>Email</th><th>名稱</th><th>角色</th><th>狀態</th><th>最後登入</th></tr></thead>
+    <tbody>${list.map(u=>`<tr data-id="${u.id}"><td>${esc(u.email)}</td><td>${esc(u.name)}</td><td>${ROLE_LABELS[u.role]}</td><td>${USER_STATUS[u.status]}</td><td>${fmtTime(u.last_login_at)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("addUser").onclick=()=>openUser(null);
+  $("panel").querySelectorAll("tbody tr").forEach(tr=>tr.onclick=()=>openUser(list.find(u=>u.id===+tr.dataset.id)));
+}
+function openUser(u){
+  const form=$("editorForm");
+  const opt=(obj,v)=>Object.entries(obj).map(([k,l])=>`<option value="${k}" ${k===v?"selected":""}>${l}</option>`).join("");
+  form.innerHTML=`<h3>${u?"編輯":"新增"}使用者</h3>
+    <label class="field"><span>Email <span class="req">*</span></span><input id="u_email" value="${esc(u?u.email:"")}" ${u?"disabled":""}></label>
+    <label class="field"><span>名稱</span><input id="u_name" value="${esc(u?u.name:"")}"></label>
+    <label class="field"><span>角色</span><select id="u_role">${opt(ROLE_LABELS,u?u.role:"editor")}</select></label>
+    ${u?`<label class="field"><span>狀態</span><select id="u_status">${opt(USER_STATUS,u.status)}</select><small>停用後會立刻被登出。</small></label>`:""}
+    <p class="form-err" id="formErr" hidden></p>
+    <div class="form-actions"><button type="button" class="btn" id="cancelBtn">取消</button><button type="submit" class="btn primary">儲存</button></div>`;
+  $("cancelBtn").onclick=()=>$("editor").close();
+  form.onsubmit=async ev=>{
+    ev.preventDefault();
+    const body={email:$("u_email").value,name:$("u_name").value,role:$("u_role").value,status:u?$("u_status").value:"active"};
+    try{await api(u?`/api/admin-users/${u.id}`:"/api/admin-users",{method:u?"PUT":"POST",body});$("editor").close();toast("已儲存");await renderUsers()}
+    catch(e){showFormErr(e)}
+  };
+  $("editor").showModal();
+}
+
+/* ===== 登入 ===== */
+function handleError(e){
+  if(e instanceof AuthError){store.set(TOKEN_KEY,null);showGate(e.message,true);return}
+  toast(e.message,true);
+  if($("panel").textContent.trim()==="讀取中…")$("panel").innerHTML=`<p class="empty">${esc(e.message)}</p>`;
+}
+function showGate(msg,isErr){
+  me=null;$("app").hidden=true;$("account").hidden=true;$("gate").hidden=false;
+  $("gateMsg").textContent=msg||"請用已授權的 Google 帳號登入。";$("gateMsg").className=isErr?"err":"";
+  renderGoogleButton();
+}
+function renderGoogleButton(){
+  // Google 的 script 是非同步載入，還沒好就稍後再試
+  if(!window.google||!google.accounts){setTimeout(renderGoogleButton,200);return}
+  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleCredential});
+  google.accounts.id.renderButton($("googleBtn"),{theme:"outline",size:"large",shape:"rectangular",text:"signin_with",locale:"zh-TW"});
+}
+async function onGoogleCredential(resp){
+  $("gateMsg").textContent="登入中…（後端若在休眠，第一次約需半分鐘）";$("gateMsg").className="";
+  try{
+    const r=await api("/auth/login",{method:"POST",body:{id_token:resp.credential}});
+    store.set(TOKEN_KEY,r.session_token);await enterApp();
+  }catch(e){
+    // 403：Google 登入成功，但這個帳號不在使用者列表裡
+    showGate(e.message.includes("授權")?`${e.message}。請聯絡管理員把你的 email 加進使用者列表。`:e.message,true);
+  }
+}
+async function enterApp(){
+  // 連不上後端（例如 Render 正在喚醒）不代表登入失效，保留 token，重新整理就會再試一次
+  try{me=await api("/auth/status");schema=await api("/api/admin-schema")}
+  catch(e){return e instanceof AuthError?handleError(e):showGate(e.message,true)}
+  $("gate").hidden=true;$("app").hidden=false;$("account").hidden=false;
+  $("accountEmail").textContent=me.email;$("accountRole").textContent=ROLE_LABELS[me.role];
+  let start=store.get("obearAdminTab")||"episodes";
+  if(!TABS.some(([k])=>k===start)||(start==="users"&&me.role!=="admin"))start="episodes";
+  refreshPublish();
+  api("/api/admin-inquiries").then(l=>{newInquiries=l.filter(x=>x.status==="new").length;renderTabs(newInquiries)}).catch(()=>{});
+  await showTab(start);
+}
+$("logoutBtn").onclick=async()=>{
+  try{await api("/auth/logout",{method:"POST"})}catch(e){}
+  store.set(TOKEN_KEY,null);if(window.google&&google.accounts)google.accounts.id.disableAutoSelect();
+  showGate("已登出。");
+};
+
+if(store.get(TOKEN_KEY))enterApp();else showGate();
+</script>
+</body>
+</html>
