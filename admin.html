@@ -122,9 +122,10 @@ dialog h3{margin:0;font-family:var(--serif);font-weight:900;font-size:21px}
 /* RSS 同步 */
 .sync h4{margin:8px 0 4px;font-size:15px;border-bottom:1px solid var(--ink);padding-bottom:4px}
 .sync-item{padding:8px 0;border-bottom:1px solid var(--rule);display:grid;gap:4px}
-.sync-item > label{font-weight:700;display:flex;gap:8px;align-items:baseline}
+.sync-head{display:flex;gap:8px;align-items:center}
 .sync-change{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;font-size:14px;padding-left:4px}
-.sync-change input{margin-top:5px;accent-color:var(--red)}
+.sync-item input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;accent-color:var(--red);cursor:pointer}
+.sync .warn,#syncConfirm .warn{color:var(--red-ink);font-weight:700}
 .sync-change del{color:var(--ink-2)}
 .sync-change ins{text-decoration:none;color:var(--ok)}
 .sync-change .clip{display:block;max-height:4.9em;overflow:hidden}
@@ -359,26 +360,45 @@ function openEditor(row){
 function showFormErr(e){if(e instanceof AuthError){$("editor").close();$("syncDlg").close();return handleError(e)}const p=$("formErr")||$("syncErr");p.textContent=e.message;p.hidden=false}
 
 /* ===== RSS 同步 ===== */
+// 2026-10-17 正式後台實際發生：勾選框原本用 <label> 包住整段新舊簡介，點到長文字的任何地方都會切換勾選，
+// 套用又沒有最後確認，結果 5 集精簡過的簡介被 RSS 的完整版蓋掉、只能從原始資料還原（known-issue #38）。
+// 所以：只有勾選框本身能切換；套用前先列出「實際要改的項目」請使用者確認；送出中停用按鈕。
+// 預覽也加世代檢查：連按兩次「同步」時，晚回來的預覽不能把已勾好的選項整個重畫掉（known-issue #2）。
+let syncSeq=0;
 async function openSync(){
-  const form=$("syncForm");
+  const mine=++syncSeq;
+  const form=$("syncForm"),dlg=$("syncDlg"),btn=$("syncBtn");
+  form.onsubmit=ev=>ev.preventDefault();
   form.innerHTML=`<h3>從 SoundOn RSS 同步</h3><p class="empty">讀取 RSS 中…</p>`;
-  $("syncDlg").showModal();
+  if(!dlg.open)dlg.showModal();
+  if(btn)btn.disabled=true;
   let p;
   try{p=await api("/api/admin-episodes/sync")}
-  catch(e){form.innerHTML=`<h3>從 SoundOn RSS 同步</h3><p class="form-err">${esc(e.message)}</p><div class="form-actions"><button type="button" class="btn" onclick="this.closest('dialog').close()">關閉</button></div>`;if(e instanceof AuthError)handleError(e);return}
+  catch(e){
+    if(mine!==syncSeq)return;
+    form.innerHTML=`<h3>從 SoundOn RSS 同步</h3><p class="form-err">${esc(e.message)}</p><div class="form-actions"><button type="button" class="btn" onclick="this.closest('dialog').close()">關閉</button></div>`;
+    if(e instanceof AuthError)handleError(e);return}
+  finally{if(mine===syncSeq&&$("syncBtn"))$("syncBtn").disabled=false}
+  if(mine!==syncSeq||!dlg.open)return;
+  renderSyncPreview(p);
+}
+function renderSyncPreview(p){
+  const form=$("syncForm");
   const show=v=>esc(v===""||v==null?"（空白）":v);
-  const newHtml=p.new.map(e=>`<div class="sync-item"><label><input type="checkbox" data-new="${esc(e.soundon_id)}" checked> 新增 EP${e.episode_no}　${esc(e.job)} ${esc(e.guest)}</label>
+  const box=(attrs,label,checked)=>`<input type="checkbox" ${attrs} aria-label="${esc(label)}" ${checked?"checked":""}>`;
+  const newHtml=p.new.map(e=>`<div class="sync-item"><div class="sync-head">${box(`data-new="${esc(e.soundon_id)}" data-label="新增 EP${e.episode_no} ${esc(e.job)} ${esc(e.guest)}"`,`新增 EP${e.episode_no}`,true)}<b>新增 EP${e.episode_no}　${esc(e.job)} ${esc(e.guest)}</b></div>
     <div class="sync-change"><span></span><span>${esc(e.title)}　·　${esc(e.published_on)}　·　${e.minutes} 分鐘<br><small style="color:var(--ink-2)">「上班喝什麼」RSS 裡沒有，新增後請到該集補上。</small></span></div></div>`).join("");
   // 只有簡介不同的集數很常見（網站上的簡介是精簡版），收進預設收合的區塊，免得蓋過真正要處理的差異
   const isLeadOnly=u=>u.changes.every(c=>c.field==="lead"&&!c.default);
   const important=p.updates.filter(u=>!isLeadOnly(u)),leadOnly=p.updates.filter(isLeadOnly);
-  const updItem=u=>`<div class="sync-item"><label>EP${u.episode_no}　${esc(u.name)}</label>${u.changes.map(c=>`
-    <label class="sync-change"><input type="checkbox" data-sid="${esc(u.soundon_id)}" data-field="${c.field}" ${c.default?"checked":""}>
-    <span><b>${esc(c.label)}</b>：<del class="clip">${show(c.old)}</del><ins class="clip">→ ${show(c.new)}</ins></span></label>`).join("")}</div>`;
+  const updItem=u=>`<div class="sync-item"><div class="sync-head"><b>EP${u.episode_no}　${esc(u.name)}</b></div>${u.changes.map(c=>`
+    <div class="sync-change">${box(`data-sid="${esc(u.soundon_id)}" data-field="${c.field}" data-label="EP${u.episode_no}：${esc(c.label)}"`,`套用 EP${u.episode_no} 的${c.label}`,c.default)}
+    <span><b>${esc(c.label)}</b>${c.field==="lead"?`<small class="warn">（會覆蓋網站上的簡介）</small>`:""}：<del class="clip">${show(c.old)}</del><ins class="clip">→ ${show(c.new)}</ins></span></div>`).join("")}</div>`;
   const missing=p.missing.length?`<h4>資料庫有、RSS 沒有（可能在 SoundOn 下架了，不會自動刪除）</h4><p>${p.missing.map(m=>`EP${m.episode_no} ${esc(m.name)}`).join("、")}</p>`:"";
   const nothing=!p.new.length&&!p.updates.length;
   form.innerHTML=`<h3>從 SoundOn RSS 同步</h3>
-    <p class="hint" style="margin:0">RSS 共 ${p.feed_count} 集。勾選要套用的項目；簡介預設不勾，因為網站上的簡介通常是精簡過的版本，RSS 的是完整節目說明。「上班喝什麼」和主持人標記不會被改動。</p>
+    <div id="syncPick">
+    <p class="hint" style="margin:0">RSS 共 ${p.feed_count} 集。勾選要套用的項目（只有點勾選框本身才會切換）；簡介預設不勾，因為網站上的簡介通常是精簡過的版本，RSS 的是完整節目說明。「上班喝什麼」和主持人標記不會被改動。</p>
     <div class="sync">
       ${p.new.length?`<h4>新的集數（${p.new.length}）</h4>${newHtml}`:""}
       ${important.length?`<h4>已有集數的差異（${important.length} 集）</h4>${important.map(updItem).join("")}`:""}
@@ -386,24 +406,45 @@ async function openSync(){
       ${missing}
       ${nothing?`<p class="empty">資料庫跟 RSS 一致，沒有需要同步的項目。</p>`:""}
     </div>
+    </div>
+    <div id="syncConfirm" hidden></div>
     <p class="form-err" id="syncErr" hidden></p>
     <div class="form-actions">
       <button type="button" class="btn" id="syncCancel">${nothing?"關閉":"取消"}</button>
-      ${nothing?"":`<button type="submit" class="btn primary">套用勾選的項目</button>`}
+      ${nothing?"":`<button type="button" class="btn" id="syncBack" hidden>返回修改</button><button type="submit" class="btn primary" id="syncSubmit">下一步：確認要套用的項目</button>`}
     </div>`;
   $("syncCancel").onclick=()=>$("syncDlg").close();
+  if(nothing)return;
+  let pending=null;
+  const err=t=>{$("syncErr").textContent=t;$("syncErr").hidden=!t};
+  const back=()=>{pending=null;$("syncPick").hidden=false;$("syncConfirm").hidden=true;$("syncBack").hidden=true;$("syncSubmit").textContent="下一步：確認要套用的項目";err("")};
+  $("syncBack").onclick=back;
   form.onsubmit=async ev=>{
     ev.preventDefault();
-    const body={new:[...form.querySelectorAll("[data-new]:checked")].map(x=>x.dataset.new),updates:[]};
-    const map={};
-    form.querySelectorAll("[data-sid]:checked").forEach(x=>(map[x.dataset.sid]=map[x.dataset.sid]||[]).push(x.dataset.field));
-    body.updates=Object.entries(map).map(([soundon_id,fields])=>({soundon_id,fields}));
-    if(!body.new.length&&!body.updates.length){$("syncErr").textContent="沒有勾選任何項目。";$("syncErr").hidden=false;return}
+    if(!$("syncDlg").open)return;
+    if(!pending){
+      // 第一步：只收集、列出，不寫入
+      const picked=[...form.querySelectorAll("#syncPick input:checked")];
+      if(!picked.length){err("沒有勾選任何項目。");return}
+      const body={new:[],updates:[]},map={};
+      picked.forEach(x=>{if(x.dataset.new)body.new.push(x.dataset.new);else (map[x.dataset.sid]=map[x.dataset.sid]||[]).push(x.dataset.field)});
+      body.updates=Object.entries(map).map(([soundon_id,fields])=>({soundon_id,fields}));
+      const leads=picked.filter(x=>x.dataset.field==="lead").length;
+      pending=body;
+      $("syncConfirm").innerHTML=`<p style="margin:0 0 6px"><b>即將套用以下 ${picked.length} 項：</b></p>
+        <ul style="margin:0;padding-left:1.2em">${picked.map(x=>`<li>${esc(x.dataset.label)}${x.dataset.field==="lead"?`<small class="warn">（會覆蓋網站上的簡介）</small>`:""}</li>`).join("")}</ul>
+        ${leads?`<p class="form-err" style="margin-top:8px">其中 ${leads} 項會用 RSS 的完整節目說明覆蓋網站上的簡介，覆蓋後無法復原。</p>`:""}`;
+      $("syncPick").hidden=true;$("syncConfirm").hidden=false;$("syncBack").hidden=false;
+      $("syncSubmit").textContent=`確定套用 ${picked.length} 項`;err("");
+      return;
+    }
+    // 第二步：確認後才寫入；送出中停用按鈕，避免重複送出
+    const sub=$("syncSubmit"),bk=$("syncBack");sub.disabled=true;bk.disabled=true;sub.textContent="套用中…";
     try{
-      const r=await api("/api/admin-episodes/sync",{method:"POST",body});
+      const r=await api("/api/admin-episodes/sync",{method:"POST",body:pending});
       $("syncDlg").close();toast(`已新增 ${r.created} 集、更新 ${r.updated} 集，記得按「發布網站」`);
       await showTab("episodes");refreshPublish();
-    }catch(e){showFormErr(e)}
+    }catch(e){sub.disabled=false;bk.disabled=false;sub.textContent="確定套用";showFormErr(e)}
   };
 }
 
