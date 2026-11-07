@@ -544,7 +544,8 @@ function showGate(msg,isErr){
 }
 function renderGoogleButton(){
   // Google 的 script 是非同步載入，還沒好就稍後再試
-  if(!window.google||!google.accounts){setTimeout(renderGoogleButton,200);return}
+  // 要等到 google.accounts.id 也存在才行：腳本載入中途 google.accounts 可能已經有了、id 還沒有
+  if(!window.google||!google.accounts||!google.accounts.id){setTimeout(renderGoogleButton,200);return}
   google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleCredential});
   google.accounts.id.renderButton($("googleBtn"),{theme:"outline",size:"large",shape:"rectangular",text:"signin_with",locale:"zh-TW"});
 }
