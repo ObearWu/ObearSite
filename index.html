@@ -1041,7 +1041,7 @@ footer p{margin:0 0 6px}
         <div>
           <p class="eyebrow" style="color:#ff6b7e">私訊時附上這三件事，可以更快排時間</p>
           <ol class="steps">
-            <li><span>想洽談哪一項服務（保險、專訪／Podcast、活動、攝影課）</span></li>
+            <li><span>想洽談哪一項服務（專訪／Podcast、活動、攝影課、保險）</span></li>
             <li><span>大概的時間與地點（線上或雙北見面）</span></li>
             <li><span>人數、預算或你目前最在意的問題</span></li>
           </ol>
@@ -1053,11 +1053,12 @@ footer p{margin:0 0 6px}
         <form id="inqForm" novalidate>
           <label><span>想洽談的服務 <span class="req" aria-hidden="true">*</span></span>
             <select name="service" required>
-              <option value="insurance">保險與財務風險規劃</option>
+              <option value="" selected disabled>請選擇想洽談的服務</option>
               <option value="content">人物專訪與 Podcast 製作</option>
+              <option value="guest">上《上班喝什麼？》受訪</option>
               <option value="event">企業活動與劇本殺設計</option>
               <option value="photo">兒童攝影課</option>
-              <option value="guest">上《上班喝什麼？》受訪</option>
+              <option value="insurance">保險與財務風險規劃</option>
               <option value="other">其他</option>
             </select>
           </label>
@@ -1111,10 +1112,10 @@ form.addEventListener('submit',async ev=>{
   ev.preventDefault();
   const data=Object.fromEntries(new FormData(form));
   const say=(t,c)=>{st.textContent=t;st.className='status'+(c?' '+c:'')};
-  const bad={name:!data.name.trim(),contact:data.contact.trim().length<4,message:data.message.trim().length<10};
+  const bad={service:!data.service,name:!data.name.trim(),contact:data.contact.trim().length<4,message:data.message.trim().length<10};
   for(const k in bad){const el=form.elements[k];if(bad[k])el.setAttribute('aria-invalid','true');else el.removeAttribute('aria-invalid')}
-  if(bad.name||bad.contact||bad.message){
-    say('請填寫稱呼、聯絡方式，並用至少 10 個字描述想聊的事。','err');form.querySelector('[aria-invalid=true]').focus();return}
+  if(bad.service||bad.name||bad.contact||bad.message){
+    say('請選擇想洽談的服務、填寫稱呼與聯絡方式，並用至少 10 個字描述想聊的事。','err');form.querySelector('[aria-invalid=true]').focus();return}
   const sub=form.querySelector('button');sub.disabled=true;
   const slow=setTimeout(()=>say('還在送出，請稍候…'),4000);
   say('送出中…');
