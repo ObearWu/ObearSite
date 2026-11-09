@@ -49,6 +49,15 @@
         "@type": "Person",
         "@id": "https://obearwu.github.io/ObearSite/#obear",
         "name": "吳思彥"
+      },
+      "associatedMedia": {
+        "@type": "AudioObject",
+        "name": "【EP25】保險業務員 何宗憲｜籃球夢碎、半夜翻陽台偷打電動！從理賠客戶變業務、打死不當老師的翻身人生",
+        "encodingFormat": "audio/mpeg",
+        "duration": "PT50M",
+        "uploadDate": "2026-10-21",
+        "inLanguage": "zh-Hant",
+        "url": "https://solink.soundon.fm/episode/f0f6ddc1-d2d8-40b8-9578-f4a79f9fbe72"
       }
     },
     {
@@ -273,6 +282,7 @@ button{font:inherit;cursor:pointer}
 
 footer{background:var(--paper);border-top:3px solid var(--red);font-size:13px;color:var(--ink-2);padding-block:24px}
 footer p{margin:0 0 6px}
+footer a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 
@@ -287,6 +297,11 @@ footer p{margin:0 0 6px}
 .epp .lead{max-width:40em;font-size:17px;margin:0 0 20px}
 .epp .actions{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 8px}
 .epp .note{font-size:13px;color:var(--ink-2);margin:0}
+.chapters{margin-top:36px;max-width:44em}
+.chapters h2{font-size:20px;margin-bottom:12px}
+.chapters ol{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
+.chapters li{display:grid;grid-template-columns:5.2em minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:15px;line-height:1.7}
+.chapters .t{font-family:var(--mono);color:var(--red-ink);font-size:14px;padding-top:1px}
 .epp .host{display:inline-block;margin:0 0 14px;font-size:13px;font-weight:700;color:var(--inverse-ink);background:var(--inverse);padding:2px 12px}
 .epnav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:48px}
 .epnav>a,.epnav>span{display:flex;flex-direction:column;gap:4px;padding:16px 18px;background:var(--paper);text-decoration:none;min-width:0}
@@ -308,7 +323,7 @@ footer p{margin:0 0 6px}
 
 <header class="topbar">
   <div class="wrap">
-    <a class="logo" href="../../"><b>黑<i>熊</i></b><span>OBEAR · 人物 × 風險 × 現場</span></a>
+    <a class="logo" href="../../"><b>黑<i>熊</i></b><span>OBEAR · 人物 × 聲音 × 現場</span></a>
     <nav aria-label="主要選單">
       <a href="../../#about">關於</a>
       <a href="../../#works">作品</a>
@@ -353,6 +368,7 @@ footer p{margin:0 0 6px}
   <div class="wrap">
     <p>© 2026 主持人黑熊。專訪系列之文字報導與攝影照片著作權均屬「主持人黑熊」團隊所有。</p>
     <p>保險相關內容僅供參考，實際保障以保單條款為準。</p>
+    <p><a href="../../privacy/">隱私權政策</a></p>
   </div>
 </footer>
 <!-- Cloudflare Web Analytics（不用 cookie、不追蹤個人） -->

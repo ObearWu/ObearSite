@@ -688,6 +688,7 @@ button{font:inherit;cursor:pointer}
 
 footer{background:var(--paper);border-top:3px solid var(--red);font-size:13px;color:var(--ink-2);padding-block:24px}
 footer p{margin:0 0 6px}
+footer a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 
@@ -712,6 +713,8 @@ footer p{margin:0 0 6px}
 .inq .status{font-size:15px;color:#d8d3d0}
 .inq .status.err{color:#ff8a99}
 .inq .status.ok{color:#9fe0b0}
+.inq .privacy-note{grid-column:1/-1;margin:0;font-size:13px;line-height:1.7;color:#c9c4c1;max-width:44em}
+.inq .privacy-note a{color:#e8e3e0;text-decoration:underline}
 @media (max-width:760px){.inq form{grid-template-columns:minmax(0,1fr)}}
 .eps.collapsed .ep:nth-child(n+7){display:none}
 </style>
@@ -1079,6 +1082,7 @@ footer p{margin:0 0 6px}
             <button type="submit">送出</button>
             <span class="status" id="inqStatus" role="status" aria-live="polite"></span>
           </div>
+          <p class="full privacy-note">送出即表示你已閱讀並了解<a href="privacy/">隱私權政策與個人資料告知事項</a>：資料只用來回覆你的洽談，保存至洽談結束後 1 年，你可以隨時要求查詢、更正或刪除。</p>
         </form>
       </div>
       </div>
@@ -1090,6 +1094,7 @@ footer p{margin:0 0 6px}
   <div class="wrap">
     <p>© 2026 主持人黑熊。專訪系列之文字報導與攝影照片著作權均屬「主持人黑熊」團隊所有。</p>
     <p>保險相關內容僅供參考，實際保障以保單條款為準。</p>
+    <p><a href="privacy/">隱私權政策</a></p>
   </div>
 </footer>
 
