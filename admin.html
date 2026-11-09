@@ -310,7 +310,7 @@ function fieldHtml(f,v){
   const id=`f_${f.name}`;
   if(f.kind==="bool")return `<label class="field check"><input type="checkbox" id="${id}" ${v?"checked":""}><span>${esc(f.label)}</span>${help?`<span></span>${help}`:""}</label>`;
   let input;
-  if(f.kind==="longtext")input=`<textarea id="${id}" rows="4">${esc(v)}</textarea>`;
+  if(f.kind==="longtext")input=`<textarea id="${id}" rows="${f.name==="article"?24:4}">${esc(v)}</textarea>`;
   else if(f.kind==="text_list")input=`<textarea id="${id}" rows="4">${esc((v||[]).join("\n"))}</textarea>`;
   else if(f.kind==="int")input=`<input id="${id}" type="number" step="1" value="${esc(v)}">`;
   else if(f.kind==="date")input=`<input id="${id}" type="date" value="${esc(v)}">`;
