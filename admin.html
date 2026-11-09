@@ -97,6 +97,7 @@ td .clip{display:block;max-width:34ch;overflow:hidden;text-overflow:ellipsis;whi
 .card-row select,.card-row input{padding:5px 10px;border:1px solid var(--rule);background:var(--ground)}
 .card-row input{flex:1;min-width:180px}
 .tag-new{font-size:11px;font-weight:700;padding:0 8px;background:var(--red);color:#fff}
+.tag-todo{font-size:12px;font-weight:700;padding:1px 8px;border:1px solid var(--red);color:var(--red)}
 dl.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;margin:0;font-size:14px}
 dl.kv dt{color:var(--ink-2)}
 dl.kv dd{margin:0;overflow-wrap:anywhere}
@@ -294,6 +295,7 @@ function renderResource(){
       <thead><tr>${cols.map(f=>`<th>${esc(f.label)}</th>`).join("")}</tr></thead>
       <tbody>${shown.map(row=>`<tr data-id="${row.id}">${cols.map(f=>{
         const v=cellText(f,row[f.name]);
+        if(current==="episodes"&&f.name==="drink"&&!v)return`<td><span class="tag-todo" title="網站上這集不會顯示「上班喝」，點這一列補上">待補</span></td>`;
         return f.kind==="int"?`<td class="num">${esc(v)}</td>`:`<td><span class="clip">${esc(v)}</span></td>`}).join("")}</tr>`).join("")}</tbody>
     </table>`:`<p class="empty">${q?"找不到符合的資料":"還沒有資料"}</p>`}</div>`;
   const s=$("search");s.oninput=()=>{query=s.value;const pos=s.selectionStart;renderResource();const n=$("search");n.focus();n.setSelectionRange(pos,pos)};
